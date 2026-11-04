@@ -37,12 +37,12 @@ type DispatchRow = {
 };
 
 async function requireLastProjectCode(code: string): Promise<void> {
-  if (!/^PD\d{4}-\d{4}$/.test(code)) {
+  if (!/^PD\d{4}--\d{4}$/.test(code)) {
     throw new AdminActionError(409, '该项目编号不符合规则，无法永久删除');
   }
   const later = await one<{ project_code: string }>(
     'SELECT project_code FROM projects WHERE project_code LIKE ? AND project_code > ? ORDER BY project_code DESC LIMIT 1',
-    [`${code.slice(0, 7)}%`, code],
+    [`${code.slice(0, 8)}%`, code],
   );
   if (later) throw new AdminActionError(409, `请先处理更大的编号 ${later.project_code}；该项目可选择撤销`);
 }

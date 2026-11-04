@@ -4,13 +4,13 @@ export PATH=/opt/order-record/node/bin:/usr/bin:/bin
 umask 027
 
 die() { echo "prepare: $*" >&2; exit 1; }
-[[ $(id -un) == orderdeploy ]] || die "must run as orderdeploy"
+[[ $(id -un) == miningdeploy ]] || die "must run as miningdeploy"
 [[ $# == 3 && $1 =~ ^[0-9a-f]{40}$ && $2 =~ ^[0-9a-f]{64}$ && $3 =~ ^[0-9a-f]{64}$ ]] ||
   die "expected commit and two SHA-256 hashes"
 commit=$1
 source_hash=$2
 dist_hash=$3
-base=/var/lib/order-record-deploy
+base=/var/lib/mining-order-deploy
 source_tar="$base/incoming/$commit-source.tar"
 dist_tar="$base/incoming/$commit-dist.tar"
 release="$base/releases/$commit"

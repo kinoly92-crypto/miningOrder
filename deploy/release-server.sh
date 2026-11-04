@@ -25,11 +25,11 @@ wait_for_service() {
 [[ ${EUID} == 0 ]] || die "must run as root"
 [[ $# == 1 && $1 =~ ^[0-9a-f]{40}$ ]] || die "expected a full Git commit ID"
 commit=$1
-release="/var/lib/order-record-deploy/releases/$commit"
-dropdir=/etc/systemd/system/order-record.service.d
-dropin="$dropdir/zz-order-record-release.conf"
-preview=order-record-release-preview.service
-lock=/run/order-record-release.lock
+release="/var/lib/mining-order-deploy/releases/$commit"
+dropdir=/etc/systemd/system/mining-order.service.d
+dropin="$dropdir/zz-mining-order-release.conf"
+preview=mining-order-release-preview.service
+lock=/run/mining-order-release.lock
 
 exec 9>"$lock"
 flock -n 9 || die "another release is running"
@@ -41,16 +41,16 @@ flock -n 9 || die "another release is running"
 [[ $(stat -c %u "$dropdir") == 0 ]] || die "service configuration directory is not root-owned"
 mode=$(stat -c %a "$dropdir")
 (( (8#$mode & 8#022) == 0 )) || die "service configuration directory is writable by others"
-systemctl is-active --quiet order-record.service || die "production service is not active"
-listener_belongs_to_unit order-record.service 3001 || die "production service does not own port 3001"
-curl --noproxy '*' --silent --show-error --fail --max-time 5 http://127.0.0.1:3001/ >/dev/null ||
+systemctl is-active --quiet mining-order.service || die "production service is not active"
+listener_belongs_to_unit mining-order.service 3002 || die "production service does not own port 3002"
+curl --noproxy '*' --silent --show-error --fail --max-time 5 http://127.0.0.1:3002/ >/dev/null ||
   die "production HTTP check failed before release"
-listeners=$(ss -H -ltn 'sport = :31082') || die "cannot check preview port"
-[[ -z $listeners ]] || die "preview port 31082 is in use"
+listeners=$(ss -H -ltn 'sport = :31083') || die "cannot check preview port"
+[[ -z $listeners ]] || die "preview port 31083 is in use"
 [[ $(systemctl show "$preview" -p LoadState --value) == not-found ]] ||
   die "preview unit already exists"
 
-backup=$(mktemp /run/order-record-release.XXXXXXXX)
+backup=$(mktemp /run/mining-order-release.XXXXXXXX)
 had_dropin=0
 changed=0
 preview_started=0
@@ -73,11 +73,11 @@ cleanup() {
     else
       rm -f -- "$dropin"
     fi
-    if systemctl daemon-reload && systemctl restart order-record.service &&
-       wait_for_service order-record.service 3001; then
+    if systemctl daemon-reload && systemctl restart mining-order.service &&
+       wait_for_service mining-order.service 3002; then
       echo "release: previous service restored" >&2
     else
-      echo "release: ROLLBACK FAILED; check order-record.service immediately" >&2
+      echo "release: ROLLBACK FAILED; check mining-order.service immediately" >&2
     fi
   fi
   rm -f -- "$backup"
@@ -86,19 +86,19 @@ cleanup() {
 trap cleanup EXIT
 
 systemd-run --unit="$preview" --collect \
-  --property=User=orderrecord --property=Group=orderrecord \
+  --property=User=miningorder --property=Group=miningorder \
   --property="WorkingDirectory=$release" \
-  --property=EnvironmentFile=/etc/order-record/app.env \
+  --property=EnvironmentFile=/etc/mining-order/app.env \
   --property=NoNewPrivileges=yes --property=PrivateTmp=yes \
   --property=ProtectSystem=strict --property=ProtectHome=yes \
   --property=UMask=0077 \
   --setenv=NODE_ENV=production --setenv=DB_CLIENT=mysql \
-  --setenv=HOST=127.0.0.1 --setenv=PORT=31082 \
-  --setenv=TRUST_PROXY=loopback --setenv=HOME=/var/lib/order-record \
+  --setenv=HOST=127.0.0.1 --setenv=PORT=31083 \
+  --setenv=TRUST_PROXY=loopback --setenv=HOME=/var/lib/mining-order \
   --setenv=PATH=/opt/order-record/node/bin:/usr/bin:/bin \
   /opt/order-record/node/bin/node --import tsx server/src/index.ts
 preview_started=1
-wait_for_service "$preview" 31082 || die "preview failed; production was not switched"
+wait_for_service "$preview" 31083 || die "preview failed; production was not switched"
 systemctl stop "$preview"
 preview_started=0
 
@@ -108,9 +108,9 @@ chmod 0644 "$tmp"
 mv -f -- "$tmp" "$dropin"
 changed=1
 systemctl daemon-reload
-[[ $(systemctl show order-record.service -p WorkingDirectory --value) == "$release" ]] ||
+[[ $(systemctl show mining-order.service -p WorkingDirectory --value) == "$release" ]] ||
   die "another drop-in overrides the release directory"
-systemctl restart order-record.service
-wait_for_service order-record.service 3001 || die "production health check failed"
+systemctl restart mining-order.service
+wait_for_service mining-order.service 3002 || die "production health check failed"
 changed=0
 echo "release: deployed $commit"

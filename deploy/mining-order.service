@@ -1,20 +1,20 @@
 [Unit]
-Description=Order Record Platform
+Description=Mining Order Platform
 After=network.target
 
 [Service]
 Type=simple
-User=orderrecord
-Group=orderrecord
-WorkingDirectory=/opt/order-record/app
+User=miningorder
+Group=miningorder
+WorkingDirectory=/opt/mining-order/app
 Environment=NODE_ENV=production
 Environment=DB_CLIENT=mysql
 Environment=HOST=127.0.0.1
-Environment=PORT=3001
+Environment=PORT=3002
 Environment=TRUST_PROXY=loopback
-Environment=HOME=/var/lib/order-record
+Environment=HOME=/var/lib/mining-order
 Environment=PATH=/opt/order-record/node/bin:/usr/bin:/bin
-EnvironmentFile=/etc/order-record/app.env
+EnvironmentFile=/etc/mining-order/app.env
 ExecStart=/opt/order-record/node/bin/node --import tsx server/src/index.ts
 Restart=on-failure
 RestartSec=3s

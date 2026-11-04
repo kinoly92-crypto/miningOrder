@@ -4,7 +4,7 @@
  * 这样浏览器端与 Node 端都能安全引用，不会产生运行时依赖。
  */
 
-/** 角色：管理员 / 部门主任 / 只读 */
+/** 角色：管理员 / 主任 / 只读 */
 export type Role = 'admin' | 'director' | 'viewer';
 
 /** 项目整体状态由派单记录和手动恢复待派单标记共同决定。 */
@@ -12,7 +12,13 @@ export type ProjectStatus = 'pending' | 'dispatched' | 'done' | 'terminated';
 
 /** 单条派单记录的状态 */
 export type DispatchStatus = 'dispatched' | 'done' | 'terminated';
-export type ProjectType = '资产评估报告' | '房地产估价报告（含租金）' | '土地估价报告' | '矿业权报告' | '债权分析报告' | '咨询报告' | '预估报告（函）';
+export type ProjectType =
+  | '矿业权出让收益报告'
+  | '矿业权出让底价报告'
+  | '矿业权评估报告'
+  | '矿业权价款退还报告'
+  | '咨询报告'
+  | '其他';
 
 /** 业务程度 */
 export type BusinessLevel = 'A类' | 'B类' | 'C类';
@@ -29,6 +35,7 @@ export interface User {
   role: Role;
   deptId: number | null;
   deptName: string | null;
+  mustChangePassword: boolean;
 }
 
 export interface DispatchRecord {
@@ -61,6 +68,7 @@ export interface Project {
   businessSource: string | null;
   businessLevel: BusinessLevel | null;
   projectType: ProjectType;
+  /** 评估目的。可选值来自矿业权评估业务枚举规范，共 18 项。 */
   evalPurpose: string | null;
   estimatedFee: number | null;
   deadline: string | null;

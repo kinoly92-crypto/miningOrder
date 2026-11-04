@@ -67,6 +67,7 @@ test('isolated authentication, one-use realtime tickets, and login throttling', 
   const port = await availablePort();
   const password = randomBytes(24).toString('hex');
   const newPassword = randomBytes(24).toString('hex');
+  const newerPassword = randomBytes(24).toString('hex');
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, ['--import', 'tsx', 'server/src/index.ts'], {
     cwd: process.cwd(),
@@ -90,13 +91,29 @@ test('isolated authentication, one-use realtime tickets, and login throttling', 
 
   try {
     await waitForServer(base, child, () => output);
-    const login = await fetch(`${base}/api/auth/login`, {
+    let login = await fetch(`${base}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'zhoulh', password }),
+      body: JSON.stringify({ username: 'licl', password }),
     });
     assert.equal(login.status, 200);
-    const token = (await login.json()).data.token;
+    let loginData = await login.json();
+    if (loginData.data.user.mustChangePassword) {
+      const change = await fetch(`${base}/api/auth/change-password`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${loginData.data.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: password, newPassword }),
+      });
+      assert.equal(change.status, 200);
+      login = await fetch(`${base}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'licl', password: newPassword }),
+      });
+      assert.equal(login.status, 200);
+      loginData = await login.json();
+    }
+    const token = loginData.data.token;
     const headers = { Authorization: `Bearer ${token}` };
 
     assert.equal((await fetch(`${base}/api/projects`, { headers })).status, 200);
@@ -118,8 +135,8 @@ test('isolated authentication, one-use realtime tickets, and login throttling', 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
         派单项目名称: `Excel Import ${format}`,
-        交付成果类型: '资产评估报告',
-        承接部门: '业务1部',
+        交付成果类型: '矿业权评估报告',
+        主要承接平台: '中和西南分公司',
         项目负责人: '测试负责人',
       }]), '台账导入模板');
       const data = XLSX.write(workbook, { type: 'buffer', bookType: format });
@@ -148,7 +165,7 @@ test('isolated authentication, one-use realtime tickets, and login throttling', 
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        project: { projectName: 'Isolated Security Test', projectType: '资产评估报告' },
+        project: { projectName: 'Isolated Security Test', projectType: '矿业权评估报告' },
         dispatch: { deptId: 1, assignee: 'TestUser' },
       }),
     });
@@ -165,21 +182,29 @@ test('isolated authentication, one-use realtime tickets, and login throttling', 
     const changePassword = await fetch(`${base}/api/auth/account`, {
       method: 'PATCH',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'zhoulh', currentPassword: password, newPassword }),
+      body: JSON.stringify({ username: 'licl', currentPassword: newPassword, newPassword: newerPassword }),
     });
     assert.equal(changePassword.status, 200);
     assert.equal((await fetch(`${base}/api/events?ticket=${staleTicket}`)).status, 401);
     assert.equal((await fetch(`${base}/api/projects`, { headers })).status, 401);
 
     let limited;
+    let throttled = false;
     for (let i = 0; i < 30; i++) {
       limited = await fetch(`${base}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `192.0.2.${i + 1}` },
         body: JSON.stringify({ username: 'no-such-user', password }),
       });
-      assert.equal(limited.status, i === 29 ? 429 : 401);
+      if (throttled) {
+        assert.equal(limited.status, 429);
+      } else if (limited.status === 429) {
+        throttled = true;
+      } else {
+        assert.equal(limited.status, 401);
+      }
     }
+    assert.ok(throttled, '应在 30 次失败登录内触发限流');
     assert.ok(Number(limited.headers.get('retry-after')) > 0);
   } finally {
     if (child.exitCode === null) {

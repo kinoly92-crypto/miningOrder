@@ -135,7 +135,7 @@ export default function Board() {
   function revoke(record: DispatchRecord) {
     modal.confirm({
       title: '确认撤销这条派单？',
-      content: `${record.deptName} 承接的「${record.projectName}」将被标记为已撤销。记录仍保留在台账与操作日志中可追溯，该部门可以重新承接该项目。`,
+      content: `${record.deptName} 承接的「${record.projectName}」将被标记为已撤销。记录仍保留在台账与操作日志中可追溯，该平台可以重新承接该项目。`,
       okText: '确认撤销',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -480,7 +480,7 @@ export default function Board() {
         )}
       </Card>
 
-      <Card size="small" title="各部门派单情况" className="section-card">
+      <Card size="small" title="各平台派单情况" className="section-card">
         <Table<DeptStat>
           rowKey="deptId"
           size="small"
@@ -488,7 +488,7 @@ export default function Board() {
           scroll={{ x: 500 }}
           dataSource={stats?.byDept ?? []}
           columns={[
-            { title: '部门', dataIndex: 'deptName' },
+            { title: '平台', dataIndex: 'deptName' },
             { title: '本月派单量', dataIndex: 'monthDispatched', width: 140 },
             { title: '已派单', dataIndex: 'dispatched', width: 120 },
             { title: '已完成', dataIndex: 'done', width: 120 },

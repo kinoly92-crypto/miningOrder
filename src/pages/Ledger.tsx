@@ -133,7 +133,7 @@ export default function Ledger() {
   function revoke(record: DispatchRecord) {
     modal.confirm({
       title: '确认撤销这条派单？',
-      content: `${record.deptName} 承接的「${record.projectName}」将被标记为已撤销。记录保留在台账与操作日志中可追溯，该部门可以重新承接该项目。`,
+      content: `${record.deptName} 承接的「${record.projectName}」将被标记为已撤销。记录保留在台账与操作日志中可追溯，该平台可以重新承接该项目。`,
       okText: '确认撤销',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -231,7 +231,7 @@ export default function Ledger() {
       }
       setDeleteAction({
         title: '清空全部项目和派单',
-        description: `将永久删除全部 ${preview.projectCount} 个项目和 ${preview.dispatchCount} 条派单，包括当前筛选条件之外的数据。账号、部门和操作日志会保留，派单编号可能重新从 0001 开始。`,
+        description: `将永久删除全部 ${preview.projectCount} 个项目和 ${preview.dispatchCount} 条派单，包括当前筛选条件之外的数据。账号、平台和操作日志会保留，派单编号可能重新从 0001 开始。`,
         confirmationText: '清空全部项目',
         okText: '确认清空',
         successMessage: '项目和派单已清空',
@@ -268,7 +268,7 @@ export default function Ledger() {
     );
 
   const dispatchColumns: ColumnsType<DispatchRecord> = [
-    { title: '主要承接部门', dataIndex: 'deptName', width: 140 },
+    { title: '主要承接平台', dataIndex: 'deptName', width: 140 },
     { title: '项目负责人', dataIndex: 'assignee', width: 120 },
     { title: '项目组成员', dataIndex: 'teamMembers', width: 180, render: (v: string | null) => v || '—' },
     { title: '签字评估师一', dataIndex: 'signatoryOne', width: 140, render: (v: string | null) => v || '—' },
@@ -297,7 +297,7 @@ export default function Ledger() {
     { title: '业务程度', dataIndex: 'businessLevel', width: 100, render: (v: string | null) => v || '—' },
     { title: '交付成果类型', dataIndex: 'projectType', width: 130 },
     {
-      title: '主要承接部门',
+      title: '主要承接平台',
       key: 'dept',
       width: 190,
       render: (_: unknown, p: Project) =>
@@ -408,7 +408,7 @@ export default function Ledger() {
     { title: '委托方', key: 'client', width: 180, ellipsis: true, render: (_: unknown, r) => r.project.clientName ?? '—' },
     { title: '委托方联系人', key: 'clientContact', width: 140, render: (_: unknown, r) => r.project.clientContact || '—' },
     { title: '委托方联系电话', key: 'clientPhone', width: 160, render: (_: unknown, r) => r.project.clientPhone || '—' },
-    { title: '主要承接部门', key: 'dept', width: 140, render: (_: unknown, r) => r.dispatch.deptName },
+    { title: '主要承接平台', key: 'dept', width: 140, render: (_: unknown, r) => r.dispatch.deptName },
     { title: '项目负责人', key: 'assignee', width: 120, render: (_: unknown, r) => r.dispatch.assignee },
     { title: '项目组成员', key: 'teamMembers', width: 180, render: (_: unknown, r) => r.dispatch.teamMembers || '—' },
     { title: '签字评估师一', key: 'signatoryOne', width: 140, render: (_: unknown, r) => r.dispatch.signatoryOne || '—' },
@@ -635,7 +635,7 @@ export default function Ledger() {
         <Select
           allowClear
           style={{ width: 140 }}
-          placeholder="主要承接部门"
+          placeholder="主要承接平台"
           value={deptFilter}
           onChange={setDeptFilter}
           options={(departments ?? []).map((d) => ({ value: d.id, label: d.name }))}

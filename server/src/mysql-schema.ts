@@ -21,6 +21,7 @@ export const MYSQL_SCHEMA = [
     created_at VARCHAR(32) NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
     auth_version INTEGER NOT NULL DEFAULT 0,
+    must_change_password INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT users_dept_fk FOREIGN KEY (dept_id) REFERENCES departments(id),
     CONSTRAINT users_role_check CHECK (role IN ('director', 'viewer'))
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,

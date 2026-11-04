@@ -82,8 +82,8 @@ export default function MainLayout() {
           </a>
           {!siderCollapsed ? (
             <div className="app-brand-text">
-              <strong>中和金乾</strong>
-              <span>项目派单管理平台</span>
+              <strong>矿业权项目</strong>
+              <span>派单管理平台</span>
             </div>
           ) : null}
         </div>
@@ -119,12 +119,12 @@ export default function MainLayout() {
               <span>工作台</span><span className="header-separator">/</span>
               <strong>{menuItems.find((item) => item.key === selectedKey)?.label}</strong>
             </div>
-            <Typography.Text className="mobile-header-title" strong>中和金乾 · 派单平台</Typography.Text>
+            <Typography.Text className="mobile-header-title" strong>矿业权派单平台</Typography.Text>
           </div>
           <Space size={8}>
             <span className="live-dot desktop-header-description">实时同步中</span>
             <Tag color={user?.role === 'admin' ? 'gold' : user?.role === 'director' ? 'blue' : 'default'}>
-              {user?.role === 'admin' ? '管理员' : user?.role === 'director' ? '部门主任' : '只读账号'}
+              {user?.role === 'admin' ? '管理员' : user?.role === 'director' ? '主任' : '只读账号'}
             </Tag>
             <Typography.Text strong>{user?.displayName}</Typography.Text>
             {user?.deptName ? <Typography.Text className="desktop-header-description" type="secondary">{user.deptName}</Typography.Text> : null}
@@ -185,7 +185,7 @@ export default function MainLayout() {
           <Form.Item
             name="newPassword"
             label="新密码（不修改请留空）"
-            rules={[{ min: 8, max: 128, message: '新密码须为 8 至 128 位' }]}
+            rules={[{ min: 6, max: 128, message: '新密码须为 6 至 128 位' }]}
           >
             <Input.Password autoComplete="new-password" maxLength={128} />
           </Form.Item>

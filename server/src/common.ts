@@ -25,12 +25,17 @@ export function verifyPassword(plain: string, stored: string): boolean {
 }
 
 export const PROJECT_TYPES: ProjectType[] = [
-  '资产评估报告', '房地产估价报告（含租金）', '土地估价报告', '矿业权报告', '债权分析报告', '咨询报告', '预估报告（函）',
+  '矿业权出让收益报告',
+  '矿业权出让底价报告',
+  '矿业权评估报告',
+  '矿业权价款退还报告',
+  '咨询报告',
+  '其他',
 ];
 
 export const BUSINESS_LEVELS: BusinessLevel[] = ['A类', 'B类', 'C类'];
 
-const DISPATCH_NO_RE = /^PD(\d{4})-(\d{4})$/;
+const DISPATCH_NO_RE = /^PD(\d{4})--(\d{4})$/;
 
 export function isValidProjectType(value: string | null | undefined): value is ProjectType {
   return Boolean(value) && PROJECT_TYPES.includes(value as ProjectType);
@@ -57,7 +62,7 @@ export function isOptionalText(value: unknown, maxLength: number): boolean {
 
 export async function generateDispatchNo(date = new Date()): Promise<string> {
   const year = date.getFullYear();
-  const prefix = `PD${year}-`;
+  const prefix = `PD${year}--`;
   const rows = await all<{ project_code: string }>('SELECT project_code FROM projects WHERE project_code LIKE ?', [`${prefix}%`]);
   const maxSeq = rows.reduce((max, row) => {
     const match = DISPATCH_NO_RE.exec(row.project_code);

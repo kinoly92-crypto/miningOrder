@@ -14,23 +14,35 @@ export const DISPATCH_STATUS_META: Record<DispatchStatus, { label: string; color
   terminated: { label: '已撤销', color: 'default' },
 };
 
-export const PROJECT_TYPES: ProjectType[] = ['资产评估报告', '房地产估价报告（含租金）', '土地估价报告', '矿业权报告', '债权分析报告', '咨询报告', '预估报告（函）'];
+export const PROJECT_TYPES: ProjectType[] = [
+  '矿业权出让收益报告',
+  '矿业权出让底价报告',
+  '矿业权评估报告',
+  '矿业权价款退还报告',
+  '咨询报告',
+  '其他',
+];
 
 export const BUSINESS_LEVELS: BusinessLevel[] = ['A类', 'B类', 'C类'];
 
 export const EVALUATION_PURPOSES = [
-  '产权转让',
-  '资产转让、置换、拍卖',
-  '资产抵押/质押',
-  '资产租赁',
-  '资产收购',
-  '接受抵债资产',
+  '破产清算',
+  '破产重整',
+  '了解价值',
   '追溯评估',
-  '复核报告',
-  '财务会计报告目的',
-  '资产涉诉',
-  '资产偿债',
-  '资产补偿/损失补偿',
+  '司法诉讼',
+  '司法执行',
+  '减值测试',
+  '债务重组',
+  '抵押融资',
+  '上市公司交易',
+  '股权交易',
+  '出让收益评估',
+  '出让收益底价评估',
+  '压覆补偿评估',
+  '起始价计算',
+  '价款（出让收益）退还',
+  '资产收购',
   '其他',
 ];
 

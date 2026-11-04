@@ -43,7 +43,7 @@ const TEMPLATE_HEADERS = [
   '评估目的',
   '预估收费（元）',
   '要求完成时间',
-  '主要承接部门',
+  '主要承接平台',
   '项目负责人',
   '项目组成员',
   '签字评估师一',
@@ -95,7 +95,7 @@ function buildExportWorkbook(projects: Project[]): XLSX.WorkBook {
     '预估收费（元）': project.estimatedFee ?? '',
     要求完成时间: project.deadline ?? '',
     项目状态: PROJECT_STATUS_LABELS[project.status],
-    主要承接部门: project.dispatches.filter((d) => d.status !== 'terminated').map((d) => d.deptName).join('、'),
+    主要承接平台: project.dispatches.filter((d) => d.status !== 'terminated').map((d) => d.deptName).join('、'),
     项目负责人: project.dispatches.filter((d) => d.status !== 'terminated').map((d) => d.assignee).join('、'),
     项目组成员: project.dispatches.filter((d) => d.status !== 'terminated' && d.teamMembers).map((d) => d.teamMembers).join('；'),
     签字评估师一: project.dispatches.filter((d) => d.status !== 'terminated' && d.signatoryOne).map((d) => d.signatoryOne).join('；'),
@@ -117,7 +117,7 @@ function buildExportWorkbook(projects: Project[]): XLSX.WorkBook {
       评估目的: project.evalPurpose ?? '',
       '预估收费（元）': project.estimatedFee ?? '',
       要求完成时间: project.deadline ?? '',
-      主要承接部门: dispatch.deptName,
+      主要承接平台: dispatch.deptName,
       项目负责人: dispatch.assignee,
       项目组成员: dispatch.teamMembers ?? '',
       签字评估师一: dispatch.signatoryOne ?? '',
@@ -146,11 +146,11 @@ async function buildTemplateWorkbook(): Promise<XLSX.WorkBook> {
       委托方联系电话: '13800000000',
       业务来源: '银行推荐',
       业务程度: 'A类',
-      交付成果类型: '资产评估报告',
-      评估目的: '产权转让',
+      交付成果类型: '矿业权评估报告',
+      评估目的: '股权交易',
       '预估收费（元）': 50000,
       要求完成时间: '2026-12-31',
-      主要承接部门: '业务1部',
+      主要承接平台: '中和西南分公司',
       项目负责人: '张三',
       项目组成员: '王五；赵六',
       签字评估师一: '张三',
@@ -160,13 +160,13 @@ async function buildTemplateWorkbook(): Promise<XLSX.WorkBook> {
   ];
   const notesRows = [
     { 说明: '1. 第一张工作表必须保留当前表头，系统按列名识别。' },
-    { 说明: '2. 必填列：派单项目名称、交付成果类型。待派单可同时留空主要承接部门和项目负责人；派单时两项均必填。' },
-    { 说明: '3. 派单单号可留空；留空时系统自动生成，例如 PD2026-0001。' },
+    { 说明: '2. 必填列：派单项目名称、交付成果类型。待派单可同时留空主要承接平台和项目负责人；派单时两项均必填。' },
+    { 说明: '3. 派单单号可留空；留空时系统自动生成，例如 PD2026--0001。' },
     { 说明: '4. 若填写已存在的派单单号，系统按“追加派单”处理，不会覆盖已有项目基础信息。' },
-    { 说明: `5. 主要承接部门必须是：${departments}。旧模板“承接部门”列仍可使用。` },
-    { 说明: '6. 交付成果类型必须是：资产评估报告、房地产估价报告（含租金）、土地估价报告、矿业权报告、债权分析报告、咨询报告、预估报告（函）。' },
+    { 说明: `5. 主要承接平台必须是：${departments}。旧模板“主要承接部门”“承接部门”列仍可使用。` },
+    { 说明: '6. 交付成果类型必须是：矿业权出让收益报告、矿业权出让底价报告、矿业权评估报告、矿业权价款退还报告、咨询报告、其他。' },
     { 说明: '7. 要求完成时间建议使用 YYYY-MM-DD 格式。' },
-    { 说明: '8. 评估目的填写一项；如选择其他，请填写“其他”。' },
+    { 说明: '8. 评估目的必须是：破产清算、破产重整、了解价值、追溯评估、司法诉讼、司法执行、减值测试、债务重组、抵押融资、上市公司交易、股权交易、出让收益评估、出让收益底价评估、压覆补偿评估、起始价计算、价款（出让收益）退还、资产收购、其他。' },
     { 说明: '9. 项目组成员请用分号隔开；成员及签字评估师属于该行派单，待派单时请留空。' },
     { 说明: '10. 追加派单时，项目已有联系人、电话、业务来源和业务程度必须与填写值一致。' },
     { 说明: '11. 业务程度仅支持：A类、B类、C类。' },
@@ -266,7 +266,7 @@ router.post('/ledger/import', requireDirector, upload.single('file'), asyncRoute
         const evalPurpose = text(row['评估目的']);
         const estimatedFee = numberValue(row['预估收费（元）']);
         const deadline = dateValue(row['要求完成时间']);
-        const deptName = text(row['主要承接部门']) ?? text(row['承接部门']);
+        const deptName = text(row['主要承接平台']) ?? text(row['主要承接部门']) ?? text(row['承接部门']);
         const assignee = text(row['项目负责人']);
         const teamMembers = text(row['项目组成员']);
         const signatoryOne = text(row['签字评估师一']);
@@ -274,7 +274,7 @@ router.post('/ledger/import', requireDirector, upload.single('file'), asyncRoute
         const remark = text(row['备注']);
 
         if (!projectName || !projectType || Boolean(deptName) !== Boolean(assignee)) {
-          throw new Error(`第 ${rowNumber} 行：请填写项目名称和交付成果类型；主要承接部门与负责人必须同时填写或同时留空`);
+          throw new Error(`第 ${rowNumber} 行：请填写项目名称和交付成果类型；主要承接平台与负责人必须同时填写或同时留空`);
         }
         if (!deptName && (teamMembers || signatoryOne || signatoryTwo)) {
           throw new Error(`第 ${rowNumber} 行：待派单项目不能填写派单成员或签字评估师，请在正式派单时填写`);
@@ -282,14 +282,14 @@ router.post('/ledger/import', requireDirector, upload.single('file'), asyncRoute
 
         const dept = deptName ? departments.find((item) => item.name === deptName) : undefined;
         if (deptName && !dept) {
-          throw new Error(`第 ${rowNumber} 行：承接部门“${deptName}”不存在`);
+          throw new Error(`第 ${rowNumber} 行：主要承接平台“${deptName}”不存在`);
         }
 
         const existing = dispatchNo
           ? await validateExistingProject(rowNumber, { code: dispatchNo, name: projectName, type: projectType, clientName, clientContact, clientPhone, businessSource, businessLevel })
           : undefined;
 
-        if (existing && !dept) throw new Error(`第 ${rowNumber} 行：已有项目追加派单时须填写主要承接部门和负责人`);
+        if (existing && !dept) throw new Error(`第 ${rowNumber} 行：已有项目追加派单时须填写主要承接平台和负责人`);
         const dispatch = dept && assignee ? { deptId: dept.id, assignee, teamMembers, signatoryOne, signatoryTwo, remark } : undefined;
         const project = await createDispatchEntry(
           existing

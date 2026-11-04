@@ -228,7 +228,7 @@ export default function DispatchForm() {
       return;
     }
     if (!values.deptId && [values.teamMembers, values.signatoryOne, values.signatoryTwo].some((value) => value?.trim())) {
-      message.error('项目组成员和签字评估师属于派单信息，请先填写主要承接部门和负责人');
+      message.error('项目组成员和签字评估师属于派单信息，请先填写主要承接平台和负责人');
       return;
     }
     if (existing) {
@@ -252,7 +252,7 @@ export default function DispatchForm() {
   }
 
   const existingDispatchColumns: ColumnsType<DispatchRecord> = [
-    { title: '主要承接部门', dataIndex: 'deptName', width: 140 },
+    { title: '主要承接平台', dataIndex: 'deptName', width: 140 },
     { title: '项目负责人', dataIndex: 'assignee', width: 120 },
     { title: '派单人', dataIndex: 'dispatcherName', width: 100 },
     { title: '派单时间', dataIndex: 'dispatchedAt', width: 160, render: (v: string) => formatDateTime(v) },
@@ -275,7 +275,7 @@ export default function DispatchForm() {
         showIcon
         style={{ marginBottom: 16 }}
         message={editMode ? '修改项目基本信息' : '新建项目时将按项目名称检查疑似重复'}
-        description={editMode ? '修改后将立即同步到台账；派单单号不可修改。' : '提交前会提示名称相似的项目；派单单号自动生成。待派单项目可同时留空主要承接部门和负责人，正式派单时两项均需填写。'}
+        description={editMode ? '修改后将立即同步到台账；派单单号不可修改。' : '提交前会提示名称相似的项目；派单单号自动生成，格式如 PD2026--0001。待派单项目可同时留空主要承接平台和负责人，正式派单时两项均需填写。'}
       />
 
       {conflict ? (
@@ -314,7 +314,7 @@ export default function DispatchForm() {
                 showIcon
                 style={{ marginBottom: 12 }}
                 message={`派单单号 ${existing.projectCode} 已建档，当前为「追加派单」模式`}
-                description="项目基本信息已自动带出且不可修改，可继续为其他部门追加派单。"
+                description="项目基本信息已自动带出且不可修改，可继续为其他平台追加派单。"
               />
               <Table<DispatchRecord>
                 rowKey="id"
@@ -335,7 +335,7 @@ export default function DispatchForm() {
         form={form}
         layout="vertical"
         onFinish={handleFinish}
-        initialValues={{ projectType: '资产评估报告' }}
+        initialValues={{ projectType: '矿业权出让收益报告' }}
         disabled={submitting}
       >
         <Typography.Title level={5} style={{ marginTop: 0 }}>
@@ -457,11 +457,11 @@ export default function DispatchForm() {
           <Col xs={24} sm={12} lg={6}>
             <Form.Item
               name="deptId"
-              label="主要承接部门"
+              label="主要承接平台"
               dependencies={['assignee']}
               rules={[({ getFieldValue }) => ({
                 validator: (_, value) => value || (!existing && !getFieldValue('assignee')?.trim())
-                  ? Promise.resolve() : Promise.reject(new Error('请选择主要承接部门')),
+                  ? Promise.resolve() : Promise.reject(new Error('请选择主要承接平台')),
               })]}
             >
               <Select
@@ -490,7 +490,7 @@ export default function DispatchForm() {
           </Col>
           <Col xs={24} lg={12}>
             <Form.Item name="remark" label="备注">
-              <Input placeholder="例如 两部门协作、进场时间约定等" maxLength={200} />
+              <Input placeholder="例如 两平台协作、进场时间约定等" maxLength={200} />
             </Form.Item>
           </Col>
         </Row>

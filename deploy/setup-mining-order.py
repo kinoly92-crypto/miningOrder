@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the root-only systemd environment file for the application."""
+"""Create the root-only systemd environment file for the mining-order application."""
 
 import getpass
 import os
@@ -8,7 +8,7 @@ import sys
 import warnings
 
 
-CONFIG_DIR = "/etc/order-record"
+CONFIG_DIR = "/etc/mining-order"
 CONFIG_FILE = os.path.join(CONFIG_DIR, "app.env")
 
 
@@ -36,7 +36,7 @@ def main():
     values = {
         "MYSQL_HOST": "127.0.0.1",
         "MYSQL_PORT": "3306",
-        "MYSQL_DATABASE": "orderlist",
+        "MYSQL_DATABASE": "miningorder",
         "MYSQL_TLS": "false",
         "MYSQL_USER": username,
         "MYSQL_PASSWORD": password,

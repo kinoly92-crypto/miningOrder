@@ -21,10 +21,10 @@ export async function signToken(user: User, remember = false): Promise<string> {
 }
 
 export async function findUserById(id: number): Promise<User | undefined> {
-  const row = await one<{ id: number; username: string; display_name: string; role: Role; dept_id: number | null; dept_name: string | null }>(
+  const row = await one<{ id: number; username: string; display_name: string; role: Role; dept_id: number | null; dept_name: string | null; must_change_password: number }>(
       `SELECT u.id, u.username, u.display_name,
               CASE WHEN a.user_id IS NOT NULL THEN 'admin' ELSE u.role END AS role,
-              u.dept_id, d.name AS dept_name
+              u.dept_id, d.name AS dept_name, u.must_change_password
        FROM users u LEFT JOIN departments d ON d.id = u.dept_id
        LEFT JOIN admin_accounts a ON a.user_id = u.id
        WHERE u.id = ? AND u.is_active = 1`,
@@ -37,6 +37,7 @@ export async function findUserById(id: number): Promise<User | undefined> {
     role: row.role,
     deptId: row.dept_id ?? null,
     deptName: row.dept_name ?? null,
+    mustChangePassword: Boolean(row.must_change_password),
   };
 }
 
@@ -66,6 +67,13 @@ export async function authenticate(req: AuthedRequest, res: Response, next: Next
     }
     req.user = user;
     req.authVersion = row.auth_version;
+    if (user.mustChangePassword) {
+      const allowed = req.originalUrl === '/api/auth/me' || req.originalUrl === '/api/auth/account' || req.originalUrl === '/api/auth/change-password';
+      if (!allowed) {
+        res.status(403).json({ success: false, error: '首次登录须先修改初始密码，请完成密码修改后重新登录' });
+        return;
+      }
+    }
     next();
   } catch (error) {
     next(error);

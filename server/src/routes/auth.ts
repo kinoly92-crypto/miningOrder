@@ -26,7 +26,7 @@ router.post('/login', limitLoginAttempts, asyncRoute(async (req, res) => {
   }
   const user = (await findUserById(row.id))!;
   await writeAudit({ user, action: 'login', targetType: 'user', targetId: user.id, detail: `${user.displayName} 登录系统` });
-  res.json({ success: true, data: { token: await signToken(user, remember === true), user } });
+  res.json({ success: true, data: { token: await signToken(user, remember === true), user, mustChangePassword: user.mustChangePassword } });
 }));
 
 router.get('/me', authenticate, (req: AuthedRequest, res) => {
@@ -53,8 +53,8 @@ router.patch('/account', authenticate, asyncRoute(async (req: AuthedRequest, res
     res.status(400).json({ success: false, error: '请输入当前密码' });
     return;
   }
-  if (newPassword !== undefined && (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128)) {
-    res.status(400).json({ success: false, error: '新密码须为 8 至 128 位' });
+  if (newPassword !== undefined && (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 128)) {
+    res.status(400).json({ success: false, error: '新密码须为 6 至 128 位' });
     return;
   }
   const user = req.user!;
@@ -75,9 +75,10 @@ router.patch('/account', authenticate, asyncRoute(async (req: AuthedRequest, res
   }
 
   await inTransaction(async () => {
-    await execute('UPDATE users SET username = ?, password_hash = ?, auth_version = auth_version + 1 WHERE id = ?', [
+    await execute('UPDATE users SET username = ?, password_hash = ?, auth_version = auth_version + 1, must_change_password = ? WHERE id = ?', [
       nextUsername,
       typeof newPassword === 'string' ? hashPassword(newPassword) : row.password_hash,
+      typeof newPassword === 'string' ? 0 : user.mustChangePassword ? 1 : 0,
       user.id,
     ]);
     await writeAudit({
@@ -89,6 +90,40 @@ router.patch('/account', authenticate, asyncRoute(async (req: AuthedRequest, res
     });
   });
   res.json({ success: true, data: { message: '修改成功，请重新登录' } });
+}));
+
+router.post('/change-password', authenticate, asyncRoute(async (req: AuthedRequest, res) => {
+  const { currentPassword, newPassword } = (req.body ?? {}) as { currentPassword?: unknown; newPassword?: unknown };
+  if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > 128) {
+    res.status(400).json({ success: false, error: '请输入当前密码' });
+    return;
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 128) {
+    res.status(400).json({ success: false, error: '新密码须为 6 至 128 位' });
+    return;
+  }
+  const user = req.user!;
+  const row = await one<{ password_hash: string }>(
+    'SELECT password_hash FROM users WHERE id = ? AND is_active = 1', [user.id],
+  );
+  if (!row || !verifyPassword(currentPassword, row.password_hash)) {
+    res.status(400).json({ success: false, error: '当前密码不正确' });
+    return;
+  }
+  await inTransaction(async () => {
+    await execute(
+      'UPDATE users SET password_hash = ?, must_change_password = 0, auth_version = auth_version + 1 WHERE id = ?',
+      [hashPassword(newPassword), user.id],
+    );
+    await writeAudit({
+      user,
+      action: 'update-account',
+      targetType: 'user',
+      targetId: user.id,
+      detail: `${user.displayName} 修改了初始密码`,
+    });
+  });
+  res.json({ success: true, data: { message: '密码已修改，请重新登录' } });
 }));
 
 export default router;

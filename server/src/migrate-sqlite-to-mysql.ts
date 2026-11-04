@@ -9,7 +9,7 @@ import { MYSQL_SCHEMA } from './mysql-schema';
 
 const tables = [
   { name: 'departments', columns: ['id', 'name'] },
-  { name: 'users', columns: ['id', 'username', 'password_hash', 'display_name', 'role', 'dept_id', 'created_at', 'is_active', 'auth_version'] },
+  { name: 'users', columns: ['id', 'username', 'password_hash', 'display_name', 'role', 'dept_id', 'created_at', 'is_active', 'auth_version', 'must_change_password'] },
   { name: 'admin_accounts', columns: ['user_id'] },
   { name: 'projects', columns: ['id', 'project_code', 'project_name', 'client_name', 'client_contact', 'client_phone', 'business_source', 'business_level', 'project_type', 'eval_purpose', 'estimated_fee', 'deadline', 'created_by', 'created_at', 'updated_at', 'pending_reset'] },
   { name: 'dispatches', columns: ['id', 'project_id', 'dept_id', 'assignee', 'team_members', 'signatory_one', 'signatory_two', 'dispatcher_id', 'dispatched_at', 'status', 'remark', 'actual_completion_date', 'updated_at'] },
@@ -35,15 +35,15 @@ async function main(): Promise<void> {
     const foreignKeys = sqlite.prepare('PRAGMA foreign_key_check').all();
     if (foreignKeys.length) throw new Error('SQLite 存在外键异常，未开始迁移');
     const projectColumns = sqlite.prepare('PRAGMA table_info(projects)').all() as { name: string }[];
-    const dispatchColumns = sqlite.prepare('PRAGMA table_info(dispatches)').all() as { name: string }[];
-    const optionalColumns = new Set(['pending_reset', 'client_contact', 'client_phone', 'business_source', 'business_level', 'team_members', 'signatory_one', 'signatory_two', 'actual_completion_date']);
+    const dispatchColumns = sqlite.prepare('PRAGMA table_info(dispatches)').all();
+    const optionalColumns = new Set(['pending_reset', 'client_contact', 'client_phone', 'business_source', 'business_level', 'team_members', 'signatory_one', 'signatory_two', 'actual_completion_date', 'must_change_password']);
     const sourceRows = tables.map(({ name, columns }) => ({
       name,
       columns,
       rows: sqlite.prepare(`SELECT ${columns.map((column) => {
         const sourceColumns = name === 'projects' ? projectColumns : name === 'dispatches' ? dispatchColumns : undefined;
         if (sourceColumns && optionalColumns.has(column) && !sourceColumns.some((c) => c.name === column)) {
-          return `${column === 'pending_reset' ? '0' : 'NULL'} AS ${column}`;
+          return `${column === 'pending_reset' || column === 'must_change_password' ? '0' : 'NULL'} AS ${column}`;
         }
         return column;
       }).join(', ')} FROM ${name} ORDER BY ${columns[0]}`).all(),

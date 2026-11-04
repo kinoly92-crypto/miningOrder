@@ -92,7 +92,7 @@ const PORT = Number(process.env.PORT ?? 3001);
 verifyStorage().then(() => {
   const host = process.env.HOST?.trim();
   const onListen = () => {
-    console.log(`[server] 派单记录平台接口已启动：http://localhost:${PORT}`);
+    console.log(`[server] 矿业权项目派单管理平台接口已启动：http://localhost:${PORT}`);
   };
   if (host) {
     app.listen(PORT, host, onListen);

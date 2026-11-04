@@ -38,19 +38,30 @@ test('pending, revoked, export and sequential deletion rules', { timeout: 60000 
     });
   }
   async function login(username, secret) {
-    const response = await request('/api/auth/login', null, { username, password: secret });
+    let response = await request('/api/auth/login', null, { username, password: secret });
     assert.equal(response.status, 200);
-    return (await response.json()).data.token;
+    let data = await response.json();
+    let effectiveSecret = secret;
+    if (data.data.user.mustChangePassword) {
+      const token = data.data.token;
+      effectiveSecret = `${secret}_new`;
+      response = await request('/api/auth/account', token, { username, currentPassword: secret, newPassword: effectiveSecret }, 'PATCH');
+      assert.equal(response.status, 200);
+      response = await request('/api/auth/login', null, { username, password: effectiveSecret });
+      assert.equal(response.status, 200);
+      data = await response.json();
+    }
+    return { token: data.data.token, password: effectiveSecret };
   }
   async function data(url, token, body, method) {
     const response = await request(url, token, body, method);
     assert.equal(response.status, 200, await response.clone().text());
     return (await response.json()).data;
   }
-  const projectInput = (name) => ({ project: { projectName: name, projectType: '资产评估报告' } });
-  const deleteBody = (p) => ({
+  const projectInput = (name) => ({ project: { projectName: name, projectType: '矿业权评估报告' } });
+  const deleteBody = (p, pass) => ({
     id: p.id, expectedCode: p.projectCode, expectedUpdatedAt: p.updatedAt,
-    expectedDispatches: p.dispatches.map((d) => ({ id: d.id, updatedAt: d.updatedAt })), password: adminPassword,
+    expectedDispatches: p.dispatches.map((d) => ({ id: d.id, updatedAt: d.updatedAt })), password: pass,
   });
 
   try {
@@ -63,8 +74,11 @@ test('pending, revoked, export and sequential deletion rules', { timeout: 60000 
       await delay(100);
     }
     assert.ok(ready, output);
-    const director = await login('zhoulh', password);
-    const admin = await login('sysadmin', adminPassword);
+    const directorResult = await login('licl', password);
+    const director = directorResult.token;
+    const adminResult = await login('sysadmin', adminPassword);
+    const admin = adminResult.token;
+    const adminPass = adminResult.password;
 
     const pending = await data('/api/dispatches', director, projectInput('Pending rule project'));
     assert.equal(pending.status, 'pending');
@@ -106,10 +120,10 @@ test('pending, revoked, export and sequential deletion rules', { timeout: 60000 
     await data(`/api/projects/${later.id}/reset-pending`, director, { expectedUpdatedAt: laterCurrent.updatedAt });
     laterCurrent = (await data('/api/projects', director)).find((p) => p.id === later.id);
     assert.equal(laterCurrent.status, 'pending');
-    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(current))).status, 409);
-    assert.equal((await request('/api/admin/projects/delete', director, deleteBody(laterCurrent))).status, 403);
-    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(laterCurrent))).status, 200);
-    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(current))).status, 200);
+    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(current, adminPass))).status, 409);
+    assert.equal((await request('/api/admin/projects/delete', director, deleteBody(laterCurrent, adminPass))).status, 403);
+    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(laterCurrent, adminPass))).status, 200);
+    assert.equal((await request('/api/admin/projects/delete', admin, deleteBody(current, adminPass))).status, 200);
 
     const created = await data('/api/dispatches', director, {
       project: { ...projectInput('Contact and teams').project, clientContact: '李先生', clientPhone: '010-12345678' },
@@ -134,7 +148,7 @@ test('pending, revoked, export and sequential deletion rules', { timeout: 60000 
     const exportedProjects = await readRows(await request('/api/ledger/export', director), '项目台账');
     const exportedDispatches = await readRows(await request('/api/ledger/export', director), '派单记录');
     assert.equal(exportedProjects.find((r) => r['派单单号'] === created.projectCode)['委托方联系人'], '李先生');
-    const exportedSecond = exportedDispatches.find((r) => r['派单单号'] === created.projectCode && r['主要承接部门'] === '业务2部');
+    const exportedSecond = exportedDispatches.find((r) => r['派单单号'] === created.projectCode && r['主要承接平台'] === '中和金乾');
     assert.equal(exportedSecond['委托方联系电话'], '010-12345678');
     assert.equal(exportedSecond['项目组成员'], '陈七；周八');
     assert.equal(exportedSecond['签字评估师二'], '孙九');
@@ -142,7 +156,7 @@ test('pending, revoked, export and sequential deletion rules', { timeout: 60000 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
       派单项目名称: '导入联系人和成员测试', 交付成果类型: '咨询报告', 委托方联系人: '林先生',
-      委托方联系电话: '020-12345678', 承接部门: '业务1部', 项目负责人: '林某',
+      委托方联系电话: '020-12345678', 主要承接平台: '中和西南分公司', 项目负责人: '林某',
       项目组成员: '甲；乙', 签字评估师一: '林某', 签字评估师二: '乙',
     }]), '台账导入模板');
     const form = new FormData();

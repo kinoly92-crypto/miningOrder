@@ -38,7 +38,7 @@ router.post('/dispatches', requireDirector, asyncRoute(async (req: AuthedRequest
       return;
     }
     if (error instanceof Error && error.message === 'INVALID_DISPATCH_INPUT') {
-      res.status(400).json({ success: false, error: '派单时请选择主要承接部门并填写一位项目负责人' });
+      res.status(400).json({ success: false, error: '派单时请选择主要承接平台并填写一位项目负责人' });
       return;
     }
     if (error instanceof Error && error.message === 'INVALID_ADDITIONAL_FIELDS') {
@@ -46,7 +46,7 @@ router.post('/dispatches', requireDirector, asyncRoute(async (req: AuthedRequest
       return;
     }
     if (error instanceof Error && error.message === 'INVALID_DEPARTMENT') {
-      res.status(400).json({ success: false, error: '承接部门不存在' });
+      res.status(400).json({ success: false, error: '主要承接平台不存在' });
       return;
     }
     if (error instanceof Error && error.message === 'EMPTY_PROJECT_FIELDS') {
@@ -54,7 +54,7 @@ router.post('/dispatches', requireDirector, asyncRoute(async (req: AuthedRequest
       return;
     }
     if (error instanceof Error && error.message === 'INVALID_DISPATCH_NO') {
-      res.status(400).json({ success: false, error: '派单单号格式不正确，应为 PD+年份+四位序号，例如 PD2026-0001' });
+      res.status(400).json({ success: false, error: '派单单号格式不正确，应为 PD+年份+--+四位序号，例如 PD2026--0001' });
       return;
     }
     if (error instanceof Error && error.message === 'INVALID_PROJECT_TYPE') {
@@ -72,8 +72,8 @@ router.post('/dispatches', requireDirector, asyncRoute(async (req: AuthedRequest
       const project = requestBody?.projectId ? await loadProjectById(requestBody.projectId) : undefined;
       res.status(409).json({
         success: false,
-        error: '该项目已由该部门承接，请勿重复派单',
-        conflict: { kind: 'duplicate-dispatch', message: '该项目已由该部门承接，请勿重复派单', project },
+        error: '该项目已由该平台承接，请勿重复派单',
+        conflict: { kind: 'duplicate-dispatch', message: '该项目已由该平台承接，请勿重复派单', project },
       });
       return;
     }
@@ -155,7 +155,7 @@ router.patch('/dispatches/:id', requireDirector, asyncRoute(async (req: AuthedRe
       return;
     }
     if (error instanceof Error && /UNIQUE|ER_DUP_ENTRY|Duplicate entry/i.test(error.message)) {
-      res.status(409).json({ success: false, error: '该项目已有该部门的有效派单，无法恢复此记录' });
+      res.status(409).json({ success: false, error: '该项目已有该平台的有效派单，无法恢复此记录' });
       return;
     }
     if (error instanceof ConflictError) {

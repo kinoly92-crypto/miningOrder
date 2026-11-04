@@ -1,17 +1,19 @@
-﻿{
+{
   "name": "mining-order",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "资产评估项目派单记录平台",
+  "description": "矿业权项目派单管理平台",
   "scripts": {
     "dev": "concurrently -n server,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:web\"",
     "dev:server": "tsx watch server/src/index.ts",
     "dev:web": "vite",
     "start": "tsx server/src/index.ts",
     "mysql:migrate": "tsx server/src/migrate-sqlite-to-mysql.ts",
+    "mysql:init": "tsx server/src/init-mysql.ts",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.mjs",
     "test:security": "node --import tsx --test tests/security.test.mjs tests/admin-delete.test.mjs",
     "test:board": "node --import tsx --test tests/board-layout.test.mjs",
     "test:archive": "node --test tests/archive-eol.test.mjs"
@@ -42,5 +44,9 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true
   }
 }

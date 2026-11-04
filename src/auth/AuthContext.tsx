@@ -7,7 +7,9 @@ import type { User } from '../../shared/types';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string, remember: boolean) => Promise<void>;
+  mustChangePassword: boolean;
+  login: (username: string, password: string, remember: boolean) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -15,6 +17,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,19 +47,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string, remember: boolean) => {
-    const data = await api.post<{ token: string; user: User }>('/auth/login', { username, password, remember });
+    const data = await api.post<{ token: string; user: User; mustChangePassword: boolean }>('/auth/login', { username, password, remember });
     setToken(data.token, remember);
-    setUser(data.user);
-    connectRealtime();
+    setMustChangePassword(data.mustChangePassword);
+    if (!data.mustChangePassword) {
+      setUser(data.user);
+      connectRealtime();
+    }
+    return data.user;
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await api.post('/auth/change-password', { currentPassword, newPassword });
+    setToken(null);
+    setUser(null);
+    setMustChangePassword(false);
   }, []);
 
   const logout = useCallback(() => {
     disconnectRealtime();
     setToken(null);
     setUser(null);
+    setMustChangePassword(false);
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
+  const value = useMemo(() => ({ user, loading, mustChangePassword, login, changePassword, logout }), [user, loading, mustChangePassword, login, changePassword, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

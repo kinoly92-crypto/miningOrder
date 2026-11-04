@@ -79,7 +79,7 @@ function fee(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** 修改项目基本信息（部门主任 / 管理员），带乐观并发控制。 */
+/** 修改项目基本信息（主任 / 管理员），带乐观并发控制。 */
 router.patch('/projects/:id', requireDirector, asyncRoute(async (req: AuthedRequest, res) => {
   const id = Number(req.params.id);
   const body = (req.body ?? {}) as {
