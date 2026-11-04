@@ -1,0 +1,28 @@
+[Unit]
+Description=Order Record Platform
+After=network.target
+
+[Service]
+Type=simple
+User=orderrecord
+Group=orderrecord
+WorkingDirectory=/opt/order-record/app
+Environment=NODE_ENV=production
+Environment=DB_CLIENT=mysql
+Environment=HOST=127.0.0.1
+Environment=PORT=3001
+Environment=TRUST_PROXY=loopback
+Environment=HOME=/var/lib/order-record
+Environment=PATH=/opt/order-record/node/bin:/usr/bin:/bin
+EnvironmentFile=/etc/order-record/app.env
+ExecStart=/opt/order-record/node/bin/node --import tsx server/src/index.ts
+Restart=on-failure
+RestartSec=3s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

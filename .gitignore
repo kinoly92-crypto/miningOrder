@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.vercel/
+server/data/
+.env
+.env.*
+!.env.example
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.log
+.DS_Store

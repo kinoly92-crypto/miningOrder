@@ -1,0 +1,16 @@
+export const AUDIT_ACTION_META: Record<string, { label: string; color: string }> = {
+  login: { label: '登录', color: 'default' },
+  'create-project': { label: '录入项目', color: 'cyan' },
+  'create-dispatch': { label: '派单', color: 'blue' },
+  'update-dispatch': { label: '更新派单', color: 'gold' },
+  'revoke-dispatch': { label: '撤销派单', color: 'red' },
+  'reset-project-pending': { label: '恢复待派单', color: 'blue' },
+  'revoke-pending-project': { label: '撤销待派单项目', color: 'red' },
+  'update-project': { label: '修改项目', color: 'gold' },
+  'batch-import': { label: '批量导入', color: 'purple' },
+  'update-account': { label: '账号设置', color: 'purple' },
+  'delete-project': { label: '删除项目', color: 'red' },
+  'delete-dispatch': { label: '删除派单', color: 'red' },
+  'clear-projects': { label: '清空项目', color: 'red' },
+  'clear-audit-logs': { label: '清空日志', color: 'red' },
+};
