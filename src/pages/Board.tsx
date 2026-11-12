@@ -19,11 +19,12 @@ interface BoardCardListProps {
   boardHeight: number;
   naturalHeight: number;
   onMeasure: (title: string, height: number) => void;
-  columns?: number;
+  grid?: boolean;
 }
 
-function BoardCardList({ children, count, title, boardHeight, naturalHeight, onMeasure, columns = 1 }: BoardCardListProps) {
+function BoardCardList({ children, count, title, boardHeight, naturalHeight, onMeasure, grid = false }: BoardCardListProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(1);
   const limit = BOARD_CARD_LIMIT * columns;
   const extraPerCard = boardCardExtraPadding(count, naturalHeight, boardHeight, columns);
 
@@ -36,10 +37,18 @@ function BoardCardList({ children, count, title, boardHeight, naturalHeight, onM
 
     const cards = Array.from(list.querySelectorAll<HTMLElement>('.board-card')).slice(0, limit);
     const measure = () => {
-      const extra = parseFloat(getComputedStyle(list).getPropertyValue('--board-card-extra')) || 0;
+      const style = getComputedStyle(list);
+      const actualColumns = grid && style.display === 'grid'
+        ? style.gridTemplateColumns.split(' ').filter(Boolean).length
+        : 1;
+      if (actualColumns !== columns) {
+        setColumns(actualColumns);
+        return;
+      }
+      const extra = parseFloat(style.getPropertyValue('--board-card-extra')) || 0;
       let total = 0;
       if (columns > 1) {
-        const rowGap = parseFloat(getComputedStyle(list).rowGap) || 0;
+        const rowGap = parseFloat(style.rowGap) || 0;
         for (let i = 0; i < cards.length; i += columns) {
           const row = cards.slice(i, i + columns);
           const rowHeight = Math.ceil(Math.max(...row.map((card) => card.getBoundingClientRect().height - extra)) - 0.01);
@@ -57,12 +66,12 @@ function BoardCardList({ children, count, title, boardHeight, naturalHeight, onM
     cards.forEach((card) => observer.observe(card));
     measure();
     return () => observer.disconnect();
-  }, [children, count, onMeasure, title, columns, limit]);
+  }, [children, count, onMeasure, title, columns, limit, grid]);
 
   return (
     <div
       ref={listRef}
-      className={`board-card-list${columns > 1 && count > 0 ? ' board-card-list--grid' : ''}${count === 0 ? ' board-card-list-empty' : ''}`}
+      className={`board-card-list${grid && count > 0 ? ' board-card-list--grid' : ''}${count === 0 ? ' board-card-list-empty' : ''}`}
       style={{
         height: boardHeight || undefined,
         '--board-card-extra': `${extraPerCard}px`,
@@ -102,7 +111,6 @@ export default function Board() {
   const projects = data ?? [];
   const boardProjects = projects.filter((p) =>
     !boardRecentDays || isCreatedWithinDays(p.createdAt, boardRecentDays, currentTime));
-  const pending = boardProjects.filter((p) => p.status === 'pending');
   const assignedProjects = projects.filter((p) => p.status === 'dispatched' || p.status === 'done');
   const typeNames: string[] = [...PROJECT_TYPES];
   for (const project of projects) {
@@ -297,69 +305,16 @@ export default function Board() {
           <Typography.Text type="secondary">包含今天，近1个月按30天计算</Typography.Text>
         </div>
         <div className="board-wrap">
-          {/* 待派单与撤销状态分开展示。 */}
-          <div className="board-column">
-            <div className="board-column-head">
-              <span>
-                <Tag color="orange">待派单</Tag>
-              </span>
-              <span>{pending.length}</span>
-            </div>
-            <BoardCardList
-              count={pending.length}
-              title="待派单"
-              boardHeight={boardListHeight}
-              naturalHeight={columnHeights['待派单'] ?? 0}
-              onMeasure={reportColumnHeight}
-            >
-            {pending.length === 0 ? (
-              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无待派单项目" />
-            ) : (
-              pending.map((project) => (
-                <div
-                  key={project.id}
-                  className={`board-card${isOverdue(project.deadline, currentTime) ? ' board-card-overdue' : ''}`}
-                  onClick={() => isDirector && navigate(`/ledger?code=${encodeURIComponent(project.projectCode)}`)}
-                  title={isDirector ? '点击查看该项目台账' : undefined}
-                >
-                  <div className="board-card-code">{project.projectCode}</div>
-                  <div className="board-card-name">{project.projectName}</div>
-                  {isOverdue(project.deadline, currentTime) ? <Tag color="red">已超时</Tag> : null}
-                  <div className="board-card-meta">
-                    <div>委托方：{project.clientName ?? '—'}</div>
-                    <div>委托方联系人：{project.clientContact || '—'}</div>
-                    <div>委托方联系电话：{project.clientPhone || '—'}</div>
-                    <div>交付成果类型：<strong className="board-card-type">{project.projectType}</strong></div>
-                    <div>要求完成：{formatDate(project.deadline)}</div>
-                    <div className="board-card-deadline">剩余工期：<span className={deadlineRemaining(project.deadline, currentTime).urgent ? 'board-card-deadline-urgent' : ''}>{deadlineRemaining(project.deadline, currentTime).label}</span></div>
-                    <div>预估收费：<strong className="board-card-fee">{formatFee(project.estimatedFee)}</strong></div>
-                  </div>
-                  {isDirector ? (
-                    <div style={{ marginTop: 8 }}>
-                      <Button size="small" type="primary" onClick={(e) => { e.stopPropagation(); navigate(`/dispatch/new?code=${encodeURIComponent(project.projectCode)}`); }}>
-                        派单
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ))
-            )}
-            </BoardCardList>
-          </div>
-
           {BOARD_COLUMNS.map((column) => {
             const items = boardProjects.flatMap((project) =>
               project.dispatches.filter((d) => d.status === column.key).map((dispatch) => ({ project, dispatch })),
             );
-            const revokedWithoutDispatch = column.key === 'terminated'
-              ? boardProjects.filter((project) => project.status === 'terminated' && project.dispatches.length === 0)
-              : [];
-            const count = items.length + revokedWithoutDispatch.length;
+            const count = items.length;
             return (
               <div className={`board-column${column.wide ? ' board-column-wide' : ''}`} key={column.key}>
                 <div className="board-column-head">
                   <span>
-                    <Tag color={column.key === 'done' ? 'green' : column.key === 'terminated' ? 'default' : 'blue'}>
+                    <Tag color={column.key === 'done' ? 'green' : 'blue'}>
                       {column.title}
                     </Tag>
                   </span>
@@ -371,7 +326,7 @@ export default function Board() {
                   boardHeight={boardListHeight}
                   naturalHeight={columnHeights[column.title] ?? 0}
                   onMeasure={reportColumnHeight}
-                  columns={column.wide ? 2 : 1}
+                  grid={column.wide}
                 >
                 {count === 0 ? (
                   <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无记录" />
@@ -380,13 +335,12 @@ export default function Board() {
                   {items.map(({ project, dispatch }) => (
                     <div
                       key={dispatch.id}
-                      className={`board-card${dispatch.status === 'terminated' ? ' board-card-revoked' : dispatch.status === 'done' ? ' board-card-done' : (isOverdue(project.deadline, currentTime) ? ' board-card-overdue' : '')}`}
+                      className={`board-card${dispatch.status === 'done' ? ' board-card-done' : (isOverdue(project.deadline, currentTime) ? ' board-card-overdue' : '')}`}
                       onClick={() => {
                         if (!isDirector) return;
-                        if (dispatch.status === 'terminated') setEditing(dispatch);
-                        else navigate(`/ledger?view=dispatch&dispatchId=${dispatch.id}`);
+                        navigate(`/ledger?view=dispatch&dispatchId=${dispatch.id}`);
                       }}
-                      title={isDirector ? (dispatch.status === 'terminated' ? '点击维护这条派单记录' : '点击查看这条派单台账') : undefined}
+                      title={isDirector ? '点击查看这条派单台账' : undefined}
                     >
                       <div className="board-card-code">{project.projectCode}</div>
                       <div className="board-card-name">{project.projectName}</div>
@@ -421,17 +375,6 @@ export default function Board() {
                             </Button>
                           ) : null}
                         </Space>
-                      </div>
-                    </div>
-                  ))}
-                  {revokedWithoutDispatch.map((project) => (
-                    <div key={`project-${project.id}`} className="board-card board-card-revoked">
-                      <div className="board-card-code">{project.projectCode}</div>
-                      <div className="board-card-name">{project.projectName}</div>
-                      <div className="board-card-meta">
-                        <div>尚未派单的项目已撤销</div>
-                        <div>委托方联系人：{project.clientContact || '—'}</div>
-                        <div>委托方联系电话：{project.clientPhone || '—'}</div>
                       </div>
                     </div>
                   ))}

@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BOARD_CARD_LIMIT, boardCardExtraPadding } from '../src/board-layout.ts';
+import { BOARD_COLUMNS } from '../src/constants.ts';
+
+test('board only displays active and completed dispatches', () => {
+  assert.deepEqual(BOARD_COLUMNS.map((column) => column.key), ['dispatched', 'done']);
+});
+
+test('tiled cards retain their natural padding for any grid width', () => {
+  for (const columns of [2, 3, 4, 5]) {
+    assert.equal(boardCardExtraPadding(30, 800, 1200, columns), 0);
+  }
+});
 
 test('sparse columns keep their natural card sizes', () => {
   assert.equal(BOARD_CARD_LIMIT, 5);

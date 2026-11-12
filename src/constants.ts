@@ -46,11 +46,10 @@ export const EVALUATION_PURPOSES = [
   '其他',
 ];
 
-/** 看板列顺序：待派单不在这里，它对应"尚无派单记录的项目" */
-export const BOARD_COLUMNS: { key: DispatchStatus; title: string; wide?: boolean }[] = [
+/** 看板仅展示有效派单，其他状态仍可在台账查看。 */
+export const BOARD_COLUMNS: { key: Exclude<DispatchStatus, 'terminated'>; title: string; wide?: boolean }[] = [
   { key: 'dispatched', title: '已派单', wide: true },
   { key: 'done', title: '已完成' },
-  { key: 'terminated', title: '已撤销' },
 ];
 
 export { AUDIT_ACTION_META } from '../shared/audit-actions';
