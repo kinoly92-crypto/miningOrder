@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { BOARD_CARD_LIMIT, boardCardExtraPadding } from '../board-layout';
+import { BOARD_CARD_LIMIT, boardCardExtraPadding, updateBoardColumnHeight } from '../board-layout';
 import UpdateDispatchModal from '../components/UpdateDispatchModal';
 import { BOARD_COLUMNS, PROJECT_TYPES, deadlineRemaining, formatDate, formatDateTime, formatFee, isCreatedWithinDays, isOverdue } from '../constants';
 import { useLiveData } from '../hooks/useLiveData';
@@ -98,8 +98,12 @@ export default function Board() {
   const [currentTime, setCurrentTime] = useState(() => dayjs());
   const [boardRecentDays, setBoardRecentDays] = useState(0);
   const [columnHeights, setColumnHeights] = useState<Record<string, number>>({});
+  const measuredHeights = useRef<Record<string, number>>({});
   const reportColumnHeight = useCallback((title: string, height: number) => {
-    setColumnHeights((current) => current[title] === height ? current : { ...current, [title]: height });
+    const next = updateBoardColumnHeight(measuredHeights.current, title, height);
+    if (next === measuredHeights.current) return;
+    measuredHeights.current = next;
+    setColumnHeights(next);
   }, []);
   const boardListHeight = Math.max(0, ...Object.values(columnHeights));
 

@@ -39,6 +39,7 @@ export default function Ledger() {
   const [preparingClear, setPreparingClear] = useState(false);
   const [deleteAction, setDeleteAction] = useState<DeleteAction | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [visibleRemark, setVisibleRemark] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const dispatchIdParam = searchParams.get('dispatchId');
@@ -267,6 +268,12 @@ export default function Ledger() {
       <Typography.Text type="secondary">—</Typography.Text>
     );
 
+  const renderRemark = (remark: string | null) => remark ? (
+    <button type="button" className="ledger-remark" onClick={() => setVisibleRemark(remark)} title="查看完整备注">
+      {remark}
+    </button>
+  ) : '—';
+
   const dispatchColumns: ColumnsType<DispatchRecord> = [
     { title: '主要承接平台', dataIndex: 'deptName', width: 140 },
     { title: '项目负责人', dataIndex: 'assignee', width: 120 },
@@ -277,7 +284,7 @@ export default function Ledger() {
     { title: '派单时间', dataIndex: 'dispatchedAt', width: 160, render: (v: string) => formatDateTime(v) },
     { title: '状态', dataIndex: 'status', width: 100, render: (s: DispatchStatus) => <DispatchStatusTag status={s} /> },
     { title: '实际完成时间', dataIndex: 'actualCompletionDate', width: 140, render: (v: string | null) => formatDate(v) },
-    { title: '备注', dataIndex: 'remark', render: (v: string | null) => v || '—' },
+    { title: '备注', dataIndex: 'remark', width: 220, render: renderRemark },
     { title: '操作', key: 'action', width: 240, render: (_: unknown, r: DispatchRecord) => actionCell(r) },
   ];
 
@@ -442,7 +449,7 @@ export default function Ledger() {
       render: (_: unknown, r) => formatDateTime(r.dispatch.dispatchedAt),
     },
     { title: '状态', key: 'status', width: 100, render: (_: unknown, r) => <DispatchStatusTag status={r.dispatch.status} /> },
-    { title: '备注', key: 'remark', render: (_: unknown, r) => r.dispatch.remark || '—' },
+    { title: '备注', key: 'remark', width: 220, render: (_: unknown, r) => renderRemark(r.dispatch.remark) },
     { title: '操作', key: 'action', width: 240, fixed: isMobile ? undefined : 'right', render: (_: unknown, r) => actionCell(r.dispatch) },
   ];
 
@@ -685,7 +692,7 @@ export default function Ledger() {
           columns={sortableProjects}
           rowClassName={(project) => project.status === 'terminated' ? 'ledger-row-revoked' : (project.status !== 'done' && isOverdue(project.deadline, currentTime)) ? 'ledger-row-overdue' : ''}
           scroll={{ x: 2900 }}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 个项目` }}
+          pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 个项目` }}
           expandable={{
             expandedRowRender: (p) =>
               p.dispatches.length === 0 ? (
@@ -699,7 +706,8 @@ export default function Ledger() {
                     dataSource={p.dispatches}
                     columns={sortableDispatches}
                     rowClassName={(dispatch) => dispatch.status === 'terminated' ? 'ledger-row-revoked' : ''}
-                    scroll={{ x: 1400 }}
+                    tableLayout="fixed"
+                    scroll={{ x: 1680 }}
                   />
                 </div>
               ),
@@ -713,8 +721,9 @@ export default function Ledger() {
           dataSource={dispatchRows}
           columns={sortableDispatchView}
           rowClassName={(row) => row.dispatch.status === 'terminated' ? 'ledger-row-revoked' : (row.dispatch.status !== 'done' && isOverdue(row.project.deadline, currentTime)) ? 'ledger-row-overdue' : ''}
-          scroll={{ x: 3050 }}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条派单记录` }}
+          tableLayout="fixed"
+          scroll={{ x: 3150 }}
+          pagination={{ defaultPageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条派单记录` }}
         />
       )}
 
@@ -724,6 +733,14 @@ export default function Ledger() {
         onClose={() => setEditing(null)}
         onDone={() => void reload(true)}
       />
+      <Modal
+        open={visibleRemark !== null}
+        title="完整备注"
+        onCancel={() => setVisibleRemark(null)}
+        footer={<Button onClick={() => setVisibleRemark(null)}>关闭</Button>}
+      >
+        <div className="ledger-remark-detail">{visibleRemark}</div>
+      </Modal>
       <Modal
         open={exportOpen}
         title="导出台账"

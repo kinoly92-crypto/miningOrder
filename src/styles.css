@@ -279,6 +279,33 @@ body {
   padding: 4px 0 8px;
 }
 
+.ledger-remark {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8f3f3a;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ledger-remark:focus-visible {
+  outline: 2px solid #a48358;
+  outline-offset: 2px;
+}
+
+.ledger-remark-detail {
+  max-height: 50vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .section-card {
   margin-bottom: 16px;
 }

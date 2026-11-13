@@ -1,5 +1,13 @@
 export const BOARD_CARD_LIMIT = 5;
 
+export function updateBoardColumnHeight(
+  heights: Record<string, number>,
+  title: string,
+  height: number,
+): Record<string, number> {
+  return heights[title] === height ? heights : { ...heights, [title]: height };
+}
+
 export function boardCardExtraPadding(
   count: number,
   naturalHeight: number,

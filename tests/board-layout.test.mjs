@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BOARD_CARD_LIMIT, boardCardExtraPadding } from '../src/board-layout.ts';
+import { BOARD_CARD_LIMIT, boardCardExtraPadding, updateBoardColumnHeight } from '../src/board-layout.ts';
 import { BOARD_COLUMNS } from '../src/constants.ts';
 
 test('board only displays active and completed dispatches', () => {
   assert.deepEqual(BOARD_COLUMNS.map((column) => column.key), ['dispatched', 'done']);
+});
+
+test('repeated column measurements do not trigger state updates', () => {
+  const initial = {};
+  const assigned = updateBoardColumnHeight(initial, '已派单', 1827);
+  const both = updateBoardColumnHeight(assigned, '已完成', 362);
+  assert.deepEqual(both, { '已派单': 1827, '已完成': 362 });
+  assert.strictEqual(updateBoardColumnHeight(both, '已派单', 1827), both);
+  assert.strictEqual(updateBoardColumnHeight(both, '已完成', 362), both);
+  assert.notStrictEqual(updateBoardColumnHeight(both, '已派单', 1800), both);
 });
 
 test('tiled cards retain their natural padding for any grid width', () => {
